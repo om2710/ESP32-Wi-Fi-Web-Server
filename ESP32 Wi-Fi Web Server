@@ -1,0 +1,132 @@
+#include <WiFi.h>
+#include <WebServer.h>
+
+// Wi-Fi credentials
+const char* ssid = "CHINMAY";
+const char* password = "123456789";
+
+// Web server on port 80
+WebServer server(80);
+
+// Built-in LED
+const int ledPin = 2;
+
+// Generate HTML page
+String getHTML() {
+  String html = "<!DOCTYPE html>";
+  html += "<html>";
+  html += "<head>";
+  html += "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">";
+  html += "<title>ESP32 Web Server</title>";
+
+  html += "<style>";
+  html += "html { font-family: Arial; text-align: center; margin: 0px auto; padding-top: 30px; }";
+  html += "button { padding: 15px 30px; font-size: 18px; color: white; border: none; border-radius: 5px; }";
+  html += ".on { background: green; }";
+  html += ".off { background: red; }";
+  html += "</style>";
+
+  html += "</head>";
+  html += "<body>";
+
+  html += "<h1>ESP32 Web Server</h1>";
+
+  html += "<p>";
+  html += "<a href=\"/led/on\">";
+  html += "<button class=\"on\">Turn ON</button>";
+  html += "</a>";
+  html += "</p>";
+
+  html += "<p>";
+  html += "<a href=\"/led/off\">";
+  html += "<button class=\"off\">Turn OFF</button>";
+  html += "</a>";
+  html += "</p>";
+
+  html += "</body>";
+  html += "</html>";
+
+  return html;
+}
+
+void setup() {
+
+  // Start Serial Monitor
+  Serial.begin(115200);
+
+  // Set LED pin as output
+  pinMode(ledPin, OUTPUT);
+
+  // Start with LED OFF
+  digitalWrite(ledPin, LOW);
+
+  // Start Wi-Fi connection
+  Serial.println();
+  Serial.print("Connecting to Wi-Fi: ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  // Wait for Wi-Fi connection
+  int attempts = 0;
+
+  while (WiFi.status() != WL_CONNECTED && attempts < 30) {
+    delay(500);
+    Serial.print(".");
+    attempts++;
+  }
+
+  // Check Wi-Fi connection
+  if (WiFi.status() == WL_CONNECTED) {
+
+    Serial.println();
+    Serial.println("WiFi connected!");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
+
+  } else {
+
+    Serial.println();
+    Serial.println("WiFi connection FAILED!");
+    Serial.print("WiFi status: ");
+    Serial.println(WiFi.status());
+
+    return;
+  }
+
+  // Home page
+  server.on("/", []() {
+    server.send(200, "text/html", getHTML());
+  });
+
+  // Turn LED ON
+  server.on("/led/on", []() {
+
+    digitalWrite(ledPin, HIGH);
+
+    Serial.println("LED ON");
+
+    server.send(200, "text/html", getHTML());
+  });
+
+  // Turn LED OFF
+  server.on("/led/off", []() {
+
+    digitalWrite(ledPin, LOW);
+
+    Serial.println("LED OFF");
+
+    server.send(200, "text/html", getHTML());
+  });
+
+  // Start web server
+  server.begin();
+
+  Serial.println("Web server started!");
+}
+
+void loop() {
+
+  // Handle incoming web requests
+  server.handleClient();
+}
